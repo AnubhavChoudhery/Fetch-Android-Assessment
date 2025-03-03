@@ -84,15 +84,15 @@ public class MainActivity extends AppCompatActivity {
 
     private class Fetch extends AsyncTask<String, Void, List<String>> {
         @Override
-        protected List<String> bgOp(String... urls) {
-            ArrayList<String> res = new ArrayList<>();
+        protected List<String> bgOp(String... Url) {
+            ArrayList<String> list = new ArrayList<>();
             try {
-                URL url = new URL(urls[0]);
+                URL url = new URL(Url[0]);
                 HttpURLConnection connect = (HttpURLConnection) url.openConnection();
-                connect.setRequestMethod("GET");
+                connect.setRequestMethod("GET"); //only view data
                 Scanner scanner = new Scanner(connect.getInputStream());
                 StringBuilder json = new StringBuilder();
-                while (scanner.hasNextLine()) {
+                while (scanner.hasNextLine()) { //parse lines individually
                     json.append(scanner.nextLine());
                 }
                 scanner.close();
@@ -102,7 +102,7 @@ public class MainActivity extends AppCompatActivity {
                     JSONObject obj = arr.getJSONObject(i);
                     int id = obj.getInt("listId");
                     if (id < 1 || id > 4) { // Valid list ids lie within the set {1, 2, 3, 4}
-                        throw new RuntimeException("Invalid list id");
+                        throw new RuntimeException("Invalid list id" + "\n" + id);
                     } else {
                         items.put(id, new ArrayList<>());
                     }
@@ -115,13 +115,13 @@ public class MainActivity extends AppCompatActivity {
                 }
                 for (Map.Entry<Integer, List<String>> item : items.entrySet()) {
                     Collections.sort(item.getValue());
-                    res.add("id: " + item.getKey());
-                    res.addAll(item.getValue());
+                    list.add("id: " + item.getKey());
+                    list.addAll(item.getValue());
                 }
             } catch (Exception exception) {
-                throw new RuntimeException("Couldn't fetch data properly", exception);
+                throw new RuntimeException("Couldn't fetch data properly" + "\n" + exception.getMessage());
             }
-            return res;
+            return list;
         }
 
         @Override
