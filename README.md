@@ -4,7 +4,7 @@ Prerequisites for running:
 1) JDK
 2) Android Studio (includes Android SDK)
 3) Physical Device/Android Emulator
-4) 
+
 References used while developing the app:
 1) https://www.geeksforgeeks.org/guide-to-install-and-set-up-android-studio/
 2) https://www.geeksforgeeks.org/java-for-android-building-your-first-android-app/
