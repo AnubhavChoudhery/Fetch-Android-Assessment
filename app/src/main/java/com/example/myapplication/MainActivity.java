@@ -16,11 +16,14 @@ import android.widget.ArrayAdapter;
 import android.os.AsyncTask;
 import org.json.JSONArray;
 import org.json.JSONObject;
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
+import java.util.Scanner;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.util.*;
+import java.util.Collections;
+import java.util.List;
+import java.util.ArrayList;
+import java.util.Map;
+import java.util.TreeMap;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -48,7 +51,7 @@ public class MainActivity extends AppCompatActivity {
                 Snackbar.make(view, "Fetching data...", Snackbar.LENGTH_LONG)
                         .setAnchorView(R.id.fab)
                         .setAction("Action", null).show();
-                new FetchDataTask().execute("https://fetch-hiring.s3.amazonaws.com/hiring.json");
+                new Fetch().execute("https://fetch-hiring.s3.amazonaws.com/hiring.json");
             }
         });
 
@@ -79,48 +82,46 @@ public class MainActivity extends AppCompatActivity {
                 || super.onSupportNavigateUp();
     }
 
-    // AsyncTask to fetch data
-    private class FetchDataTask extends AsyncTask<String, Void, List<String>> {
+    private class Fetch extends AsyncTask<String, Void, List<String>> {
         @Override
-        protected List<String> doInBackground(String... urls) {
-            List<String> results = new ArrayList<>();
+        protected List<String> bgOp(String... urls) {
+            ArrayList<String> res = new ArrayList<>();
             try {
                 URL url = new URL(urls[0]);
-                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-                conn.setRequestMethod("GET");
-                BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream()));
-                StringBuilder jsonText = new StringBuilder();
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    jsonText.append(line);
+                HttpURLConnection connect = (HttpURLConnection) url.openConnection();
+                connect.setRequestMethod("GET");
+                Scanner scanner = new Scanner(connect.getInputStream());
+                StringBuilder json = new StringBuilder();
+                while (scanner.hasNextLine()) {
+                    json.append(scanner.nextLine());
                 }
-                reader.close();
-
-                JSONArray jsonArray = new JSONArray(jsonText.toString());
-                Map<Integer, List<String>> groupedItems = new TreeMap<>();
-
-                for (int i = 0; i < jsonArray.length(); i++) {
-                    JSONObject obj = jsonArray.getJSONObject(i);
-                    int listId = obj.getInt("listId");
-                    String name = obj.optString("name", "").trim();
-                    
-                    if (!name.isEmpty()) {
-                        groupedItems.putIfAbsent(listId, new ArrayList<>());
-                        groupedItems.get(listId).add(name);
+                scanner.close();
+                JSONArray arr = new JSONArray(json);
+                Map<Integer, List<String>> items = new TreeMap<>();
+                for (int i = 0; i < arr.length(); i++) {
+                    JSONObject obj = arr.getJSONObject(i);
+                    int id = obj.getInt("listId");
+                    if (id < 1 || id > 4) { // Valid list ids lie within the set {1, 2, 3, 4}
+                        throw new RuntimeException("Invalid list id");
+                    } else {
+                        items.put(id, new ArrayList<>());
+                    }
+                    String name = obj.optString("name", "");
+                    if (name.isBlank()) { // Missing name entry, throw exception
+                        throw new RuntimeException("Missing name");
+                    } else {
+                        items.get(id).add(name);
                     }
                 }
-
-                for (Map.Entry<Integer, List<String>> entry : groupedItems.entrySet()) {
-                    Collections.sort(entry.getValue());
-                    results.add("List ID: " + entry.getKey()); 
-                    results.addAll(entry.getValue()); 
+                for (Map.Entry<Integer, List<String>> item : items.entrySet()) {
+                    Collections.sort(item.getValue());
+                    res.add("id: " + item.getKey());
+                    res.addAll(item.getValue());
                 }
-
-            } catch (Exception e) {
-                e.printStackTrace();
-                results.add("Error fetching data");
+            } catch (Exception exception) {
+                throw new RuntimeException("Couldn't fetch data properly", exception);
             }
-            return results;
+            return res;
         }
 
         @Override
